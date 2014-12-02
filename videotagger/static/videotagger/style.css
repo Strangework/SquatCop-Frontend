@@ -1,0 +1,22 @@
+body {
+  background-color: #3F00FF;
+  font-family: "Courier New";
+}
+
+h1 {
+  color: #7FFF00
+}
+
+#header {
+  background-color: black;
+  text-align: center;
+}
+#main {
+  width: 80%;
+  float: left;
+}
+
+#sidebar {
+  width: 20%;
+  float: right;
+}

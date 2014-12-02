@@ -1,0 +1,125 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'videotagger/style.css' %}"/>
+
+<h1>{{ msg }}</h1>
+
+<center>
+<video width="400" height="400" autoplay loop poster="{% static 'videotagger/images/background.jpg' %}" id="bgvid">
+<source src="{% static 'videotagger/videos/webm.webm' %}" type="video/webm">
+SOMEONE DOESN'T LIKE VIDS.
+</video>
+<div>
+  <button onclick="document.getElementById('bgvid').play()">PLAY</button>
+  <button onclick="document.getElementById('bgvid').pause()">PAUSE</button>
+  <button onclick="document.getElementById('bgvid').currentTime=3.25">$$$</button>
+</div>
+<canvas id="shiet" width="400" height="400" style="border:2px solid #FFFFFF;">
+</canvas>
+<div>
+  <button onclick="undo()">EY NOW</button>
+</div>
+</center>
+
+<script>
+function Tag(pointA, pointB) {
+  if (pointA.x < pointB.x && pointA.y < pointB.y)
+  {
+    //A -> NW,  B- > SE
+    this.ax = pointA.x;
+    this.ay = pointA.y;
+    this.bx = pointB.x;
+    this.by = pointB.y;
+  } else if (pointA.x < pointB.x && pointA.y > pointB.y) {
+    //A -> SW,  B- > NE
+    this.ax = pointA.x;
+    this.ay = pointB.y;
+    this.bx = pointB.x;
+    this.by = pointA.y;
+  } else if (pointA.x > pointB.x && pointA.y > pointB.y) {
+    //A -> SE,  B- > NW
+    this.ax = pointB.x;
+    this.ay = pointB.y;
+    this.bx = pointA.x;
+    this.by = pointA.y;
+  } else {
+    //A -> NE,  B- > SW
+    this.ax = pointB.x;
+    this.ay = pointA.y;
+    this.bx = pointA.x;
+    this.by = pointB.y;
+  }
+  this.w = this.bx - this.ax;
+  this.h = this.by - this.ay;
+  this.time = 0;
+}
+
+Tag.prototype = {
+  constructor: Tag,
+  setTime:function (newTime) {
+    this.time = newTime;
+  }
+  drawTag:function(context, thickness) {
+    context.fillRect(this.ax, this.ay, this.w, thickness);
+    context.fillRect(this.ax, this.ay, thickness, this.h);
+    context.fillRect(this.ax, this.by, this.w, thickness);
+    context.fillRect(this.bx, this.ay, thickness, this.h);
+  }
+}
+
+var tags = [];
+
+function undo() {
+  if (tags.length > 0)
+	tags.pop();
+  context.clearRect(0, 0, canvas.width, canvas.height);
+};
+
+function writeMessage(canvas, message) {
+  var context = canvas.getContext('2d');
+  context.clearRect(0, 0, 200, 100);
+  context.font = '8pt Calibri';
+  context.fillStyle = '#7FFF00';
+  context.fillText(message, 10, 25);
+}
+function getMousePos(canvas, evt) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: evt.clientX - rect.left,
+    y: evt.clientY - rect.top
+  };
+}
+
+var canvas = document.getElementById('shiet');
+var context = canvas.getContext('2d');
+context.fillStyle = '#7FFF00';
+var dragging = false;
+var initPos;
+var currPos;
+var currTag;
+var boxThickness = 5;
+
+function resizeSel(evt) {
+  if (dragging) {
+    currPos = getMousePos(canvas, evt);
+    currTag = new Tag(initPos, currPos);
+    currTag.drawTag(context, boxThickness);
+    writeMessage(canvas, "OH FUCK");
+  }
+}
+
+canvas.addEventListener('mousedown', function(evt) {
+  dragging = true;
+  initPos = getMousePos(canvas, evt);
+  currTag = new Tag(initPos, initPos);
+});
+canvas.addEventListener('mouseup', function() {
+  dragging = false;
+  var ohboy = new Tag(initPos, currPos);
+  tags.push(ohboy);
+  writeMessage(canvas, "(" +ohboy.ax+ ", " +ohboy.ay+ ") (" +ohboy.bx+ ", " +ohboy.by+ ")");
+});
+canvas.addEventListener('mousemove', resizeSel);
+
+</script>
+<script src="{% static 'videotagger/javascript/tagger.js' %}"></script>
+

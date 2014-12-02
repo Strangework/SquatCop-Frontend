@@ -1,0 +1,16 @@
+{% load staticfiles %}
+<h1>{{ msg }}</h1>
+<link rel="stylesheet" type="text/css" href="{% static 'videotagger/style.css' %}"/>
+
+<form action="{% url 'videotagger:upload' %}" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p>{{ form.non_field_errors }}</p>
+  <p>{{ form.video.label_tag }} {{ form.video.help_text }}</p>
+  <p>
+    {{ form.video.errors }}
+    {{ form.video }}
+  </p>
+  <p><input type="submit" value="Upload" /></p>
+</form>
+
+<a href="{% url 'videotagger:index' %}">TIMMA SQUAT SON</a>

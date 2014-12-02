@@ -1,0 +1,221 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'videotagger/style.css' %}"/>
+<div id="header">
+  <h1>{{ msg }}</h1>
+</div>
+<div id="main">
+  <h1>{{ msg }}</h1>
+  <video loop poster="{% static 'videotagger/images/background.jpg' %}" id="bgvid" style="position:absolute; z-index: -1; margin-left: auto; margin-right: auto;" onloadeddata="init()">
+    <source src="{{ vidpath }}" type="video/webm">
+    SOMEONE DOESN'T LIKE VIDS.
+  </video>
+  <canvas id='surface' width="400" height="400" style="border:2px solid #FFFFFF; margin: 0 auto;">
+  </canvas>
+</div>
+
+<div id="sidebar">
+  <center>
+  <input id='slider' type='range' oninput='seekVideo(this.value)' min='0'>
+  <br>
+  <button onclick="play()">PLAY</button>
+  <button onclick="pause()">PAUSE</button>
+  <br>
+  <button onclick="saveCurrTag()">CONFIRM</button>
+  <form action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="formName" value="tagUpload">
+    <input type="hidden" id="tags" name="tags">
+    <input type="submit" value="SQUAT">
+  </form>
+  </center>
+  <form action="{% url 'videotagger:index' %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p>
+      {{ form.video }}
+    </p>
+    <p><input type="submit" value="Upload" /></p>
+    <input type="hidden" name="formName" value="vidUpload">
+  </form>
+  <a href="{% url 'videotagger:upload' %}">WTF AM I SQUATTING</a>
+</div>
+
+<script>
+//TAG OBJECT AND METHODS
+function Tag(center, radius, color, thickness) {
+  this.x = center.x;
+  this.y = center.y;
+  this.rad = radius;
+  this.color = color;
+  this.thickness = thickness;
+  this.time = 0;
+}
+
+Tag.prototype.setRad = function(newRad) { 
+  this.rad = newRad;
+}
+  
+Tag.prototype.setTime = function(newTime) {
+  this.time = newTime;
+}
+
+Tag.prototype.setColor = function(newColor) {
+  this.color = newColor;
+}
+
+Tag.prototype.drawTag = function(context, currTime) {
+    context.beginPath()
+    context.arc(this.x, this.y, this.rad, 0, 2 * Math.PI, false);
+    context.lineWidth = this.thickness;
+    context.strokeStyle = this.outputRgba(1-Math.abs(this.time-currTime));
+    context.stroke();
+}
+
+Tag.prototype.clearTag = function(context) {
+    context.save();
+    context.globalCompositeOperation = 'destination-out';
+    context.beginPath();
+    context.arc(this.x, this.y, this.rad+(this.thickness/2)+1, 0, 2 * Math.PI, false);
+    context.fill();
+    context.restore();
+}
+
+Tag.prototype.outputRgba = function(a) {
+  return("rgba(" +(this.color).r+ ", " +(this.color).g+ ", " +(this.color).b+ ", " +a+ ")");
+}
+
+Tag.prototype.stringify = function() {
+  return("{\"x\":" +this.x+ ",\"y\":" +this.y+ ",\"rad\":" +this.rad+ ",\"time\":" +this.time+ "}");
+}
+
+function stringifyTags(x) {
+  var output = "[";
+  for (n in x) {
+    output += x[n].stringify() + ",";
+  }
+  output += "]";
+  return output;
+}
+
+function redrawTags(currTime) {
+  tags.forEach(function(entry) {entry.clearTag(context); entry.drawTag(context, currTime);});
+}
+  
+function saveCurrTag() {
+  if (!playing)
+  {
+    var currTime = document.getElementById('bgvid').currentTime;
+    currTag.setColor(confirmedColor);
+    currTag.setTime(currTime);
+    tags.push(currTag);
+    tagsString = stringifyTags(tags);
+    document.getElementById('tags').value = tagsString;
+    writeMessage(canvas, tagsString);
+    stringifyTags(tags);
+    currTag.clearTag(context);
+    redrawTags(currTime);
+  }
+}
+
+
+function getDist(a, b) {
+  return Math.sqrt(Math.pow((a.x-b.x),2)+Math.pow((a.y-b.y),2));
+  //return "lol";
+}
+
+//VIDEO FUNCTIONS
+  
+function seekVideo(x) {
+  document.getElementById('bgvid').currentTime=x;
+}
+
+function play() {
+  document.getElementById('bgvid').play();
+  currTag.clearTag(context);
+  redrawTags(document.getElementById('bgvid').currentTime);
+  playing = true;
+}
+
+function pause() {
+  document.getElementById('bgvid').pause();
+  playing = false;
+}
+
+function writeMessage(canvas, message) {
+  var context = canvas.getContext('2d');
+  context.clearRect(0, 0, 200, 100);
+  context.font = '8pt Calibri';
+  context.fillStyle = '#7FFF00';
+  context.fillText(message, 10, 25);
+}
+
+function getMousePos(canvas, evt) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: evt.clientX - rect.left,
+    y: evt.clientY - rect.top
+  };
+}
+
+//GLOBALS
+var canvas = document.getElementById('surface');
+var context = canvas.getContext('2d');
+context.fillStyle = '#7FFF00';
+var lineThickness = 10;
+var playing = false;
+var dragging = false;
+var currTag = new Tag({x:0, y:0}, 1, dragColor, 0);
+var initPos;
+var currPos;
+var tags = [];
+var dragColor = {r: '255', g: '255', b: '255'};
+var confirmedColor = {r: '0', g: '0', b: '0'};
+
+
+function resizeSel(evt) {
+  if (dragging) {
+    var currTime = document.getElementById('bgvid').currentTime;
+    currPos = getMousePos(canvas, evt);
+    var dist = getDist(initPos, currPos)
+    currTag.clearTag(context);
+    redrawTags(currTime);
+    currTag.setRad(dist);
+    currTag.drawTag(context, currTime);
+  }
+}
+canvas.addEventListener('mousedown', function(evt) {
+  if (!playing)
+  {
+    dragging = true;
+    currTag.clearTag(context);
+    initPos = getMousePos(canvas, evt);
+    currTag = new Tag(initPos, 1, dragColor, 10);
+    currTag.setTime(document.getElementById('bgvid').currentTime);
+  }
+});
+canvas.addEventListener('mouseup', function() {
+  dragging = false;
+});
+canvas.addEventListener('mousemove', resizeSel);
+
+function init() {
+  canvas.width=document.getElementById('bgvid').videoWidth;
+  canvas.height=document.getElementById('bgvid').videoHeight;
+  document.getElementById('slider').max=document.getElementById('bgvid').duration;
+}
+
+document.addEventListener("DOMContentLoaded", init, false);
+
+document.getElementById('slider').max=Math.floor(document.getElementById('bgvid').duration);
+
+setInterval(function(){ 
+  if (playing)
+  {
+    var currTime = document.getElementById('bgvid').currentTime;
+    document.getElementById('slider').value = currTime;
+    redrawTags(currTime);
+  }
+}, 50);
+
+</script>
+<script src="{% static 'videotagger/javascript/tagger.js' %}"></script>
+
