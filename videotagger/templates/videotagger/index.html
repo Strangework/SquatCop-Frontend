@@ -1,18 +1,21 @@
 {% load staticfiles %}
 <link rel="stylesheet" type="text/css" href="{% static 'videotagger/style.css' %}"/>
 <div id="header">
-  <h1>{{ msg }}</h1>
+  <h1>SquatCop</h1>
+  <i><h2>“Any sufficiently advanced technology is indistinguishable from magic.” - Arthur C. Clarke</h2></i>
 </div>
 <div id="main">
   <h1>{{ msg }}</h1>
-  <video loop poster="{% static 'videotagger/images/background.jpg' %}" id="bgvid" style="position:absolute; z-index: -1; margin-left: auto; margin-right: auto;" onloadeddata="init()">
-    <source src="{{ vidpath }}" type="video/webm">
+  <center>
+  <video loop id="bgvid" style="position:absolute; z-index: -1; margin-left: auto; margin-right: auto;" onloadeddata="init()">
+    <source src="{{ vidpath }}" type="video/mp4">
     SOMEONE DOESN'T LIKE VIDS.
   </video>
   <canvas id='surface' width="400" height="400" style="border:2px solid #FFFFFF; margin: 0 auto;">
   </canvas>
+  <br>
+  </center>
 </div>
-
 <div id="sidebar">
   <center>
   <input id='slider' type='range' oninput='seekVideo(this.value)' min='0'>
@@ -36,18 +39,19 @@
     <p><input type="submit" value="Upload" /></p>
     <input type="hidden" name="formName" value="vidUpload">
   </form>
-  <a href="{% url 'videotagger:upload' %}">WTF AM I SQUATTING</a>
+  <a href="{% url 'videotagger:results' %}">RESULTS</a>
 </div>
 
 <script>
 //TAG OBJECT AND METHODS
-function Tag(center, radius, color, thickness) {
+function Tag(center, radius, color, thickness, tagNum) {
   this.x = center.x;
   this.y = center.y;
   this.rad = radius;
   this.color = color;
   this.thickness = thickness;
   this.time = 0;
+  this.tagNum = tagNum;
 }
 
 Tag.prototype.setRad = function(newRad) { 
@@ -84,13 +88,15 @@ Tag.prototype.outputRgba = function(a) {
 }
 
 Tag.prototype.stringify = function() {
-  return("{\"x\":" +this.x+ ",\"y\":" +this.y+ ",\"rad\":" +this.rad+ ",\"time\":" +this.time+ "}");
+  return("{\"x\": " +this.x+ ",\"y\": " +this.y+ ",\"rad\": " +this.rad+ ",\"time\": " +this.time+ ",\"tagNum\":" +this.tagNum+ "}");
 }
 
 function stringifyTags(x) {
   var output = "[";
   for (n in x) {
-    output += x[n].stringify() + ",";
+    output += x[n].stringify();
+    if (n < x.length - 1)
+      output += ",";
   }
   output += "]";
   return output;
@@ -113,6 +119,7 @@ function saveCurrTag() {
     stringifyTags(tags);
     currTag.clearTag(context);
     redrawTags(currTime);
+    currTagNum += 1;
   }
 }
 
@@ -160,16 +167,16 @@ function getMousePos(canvas, evt) {
 var canvas = document.getElementById('surface');
 var context = canvas.getContext('2d');
 context.fillStyle = '#7FFF00';
-var lineThickness = 10;
+var lineThickness = 5;
 var playing = false;
 var dragging = false;
-var currTag = new Tag({x:0, y:0}, 1, dragColor, 0);
+var currTag = new Tag({x:0, y:0}, 1, dragColor, 0, 0);
 var initPos;
 var currPos;
 var tags = [];
 var dragColor = {r: '255', g: '255', b: '255'};
-var confirmedColor = {r: '0', g: '0', b: '0'};
-
+var confirmedColor = {r: '127', g: '255', b: '0'};
+var currTagNum = 0;
 
 function resizeSel(evt) {
   if (dragging) {
@@ -188,7 +195,7 @@ canvas.addEventListener('mousedown', function(evt) {
     dragging = true;
     currTag.clearTag(context);
     initPos = getMousePos(canvas, evt);
-    currTag = new Tag(initPos, 1, dragColor, 10);
+    currTag = new Tag(initPos, 1, dragColor, lineThickness, currTagNum);
     currTag.setTime(document.getElementById('bgvid').currentTime);
   }
 });
@@ -217,5 +224,5 @@ setInterval(function(){
 }, 50);
 
 </script>
-<script src="{% static 'videotagger/javascript/tagger.js' %}"></script>
+<!--<script src="{% static 'videotagger/javascript/tagger.js' %}"></script>-->
 

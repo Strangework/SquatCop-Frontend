@@ -1,10 +1,15 @@
 body {
-  background-color: #3F00FF;
+  background-color: #292E37;
   font-family: "Courier New";
 }
 
 h1 {
-  color: #7FFF00
+  color: #7FFF00;
+}
+
+h2 {
+  color: #E0FFFF;
+  font-size: 125%;
 }
 
 #header {
@@ -19,4 +24,5 @@ h1 {
 #sidebar {
   width: 20%;
   float: right;
+  padding-top: 150px;
 }
